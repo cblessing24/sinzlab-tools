@@ -72,5 +72,6 @@ def check_gpus(ctx):
     output = '\n'.join(lines)
     click.echo(output)
 
+
 if __name__ == '__main__':
     cli()
