@@ -1,5 +1,7 @@
 # sinzlab-tools
 
+![](example.PNG)
+
 ## Setup
 
 1. Clone this repository:
