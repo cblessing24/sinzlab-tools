@@ -1,0 +1,14 @@
+Host cantor
+	HostName 134.2.56.193
+
+Host kowalewskaja
+	HostName 134.2.56.113
+
+Host pythagoras
+	HostName 134.2.56.121
+
+Host russell
+	HostName 134.2.56.192
+
+Host banach
+	HostName 134.2.56.117
