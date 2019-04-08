@@ -7,3 +7,5 @@ WORKDIR /root/sinzlab-tools
 COPY . .
 
 RUN python setup.py install
+
+ENTRYPOINT /bin/bash
