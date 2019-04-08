@@ -16,6 +16,7 @@ def cli(ctx):
 @cli.command()
 @click.pass_context
 def check(ctx):
+    """Check all GPUs."""
     command = (
         'nvidia-smi '
         + '--format=csv,noheader,nounits '
