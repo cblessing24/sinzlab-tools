@@ -21,6 +21,10 @@
 
 ## Usage
 
-You can access the cli with the following command:
+1. Run the image in interactive mode:
 
-``docker run --rm --env-file .env --entrypoint sinzlab_tools sinzlab-tools``
+    ``docker run -it --rm --env-file .env sinzlab-tools``
+
+2. Run the following command inside the container to access the cli:
+
+    ``sinzlab_tools``
