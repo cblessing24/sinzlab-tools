@@ -1,5 +1,4 @@
 import os
-import configparser
 
 import click
 import fabric
@@ -8,17 +7,15 @@ import fabric
 @click.group()
 @click.pass_context
 def cli(ctx):
-    config = configparser.ConfigParser()
-    config.read('config.ini')
     ctx.ensure_object(dict)
-    ctx.obj['config'] = config
+    ctx.obj['hosts'] = ['cantor', 'kowalewskaja', 'pythagoras']
     ctx.obj['user'] = os.environ['USER']
     ctx.obj['password'] = os.environ['PASS']
 
 
 @cli.command()
 @click.pass_context
-def check_gpus(ctx):
+def check(ctx):
     command = (
         'nvidia-smi '
         + '--format=csv,noheader,nounits '
@@ -46,7 +43,7 @@ def check_gpus(ctx):
             col_widths.append(0)
         elif name == 'HOST':
             col_widths.append(
-                max(len(h) for h in ctx.obj['config']['HOSTS']) + 2)
+                max(len(h) for h in ctx.obj['hosts']) + 2)
         else:
             col_widths.append(len(name) + 2)
     width = sum(col_widths) + len(names) - 3
@@ -56,16 +53,16 @@ def check_gpus(ctx):
         '|'.join([n.center(w) for n, w in zip(names, col_widths)]),
         '|'.join(['', '=' * width, ''])
     ]
-    for name, host in ctx.obj['config']['HOSTS'].items():
-        c = fabric.Connection(
-            host,
-            user=ctx.obj['user'],
-            connect_kwargs={'password': ctx.obj['password']}
-        )
-        result = c.run(command, hide=True)
+    results = fabric.ThreadingGroup(
+        *ctx.obj['hosts'],
+        user=ctx.obj['user'],
+        connect_kwargs={'password': ctx.obj['password']}
+    ).run(command, hide=True)
+    for connection, result in sorted(results.items()):
         result = [l.split(', ') for l in result.stdout.split('\n')][:-1]
         for i, line in enumerate(result):
-            line = ['', name.upper() if i == 0 else ''] + line + ['']
+            line = [connection.original_host.upper() if i == 0 else ''] + line
+            line = [''] + line + ['']
             line = '|'.join([e.center(w) for e, w in zip(line, col_widths)])
             lines.append(line)
         lines.append(divider)
