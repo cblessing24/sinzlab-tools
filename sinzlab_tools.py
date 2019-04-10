@@ -10,10 +10,14 @@ def cli(ctx):
     config = configparser.ConfigParser()
     config.read('config.ini')
     hosts = config['DEFAULT']['hosts'].split()
-    ext = config['DEFAULT']['institution']
+    common = config['DEFAULT']['common']
     ctx.ensure_object(dict)
-    ctx.obj['hosts'] = {'.'.join([host, ext]): host.upper() for host in hosts}
+    ctx.obj['hosts'] = ['.'.join([h, common]) for h in hosts]
     ctx.obj['user'] = config['DEFAULT']['user']
+
+
+def get_host_name(host):
+    return host.split('.')[0]
 
 
 @cli.command()
@@ -47,7 +51,7 @@ def check(ctx):
             col_widths.append(0)
         elif name == 'HOST':
             col_widths.append(
-                max(len(h) for h in ctx.obj['hosts'].values()) + 2)
+                max(len(get_host_name(h)) for h in ctx.obj['hosts']) + 2)
         else:
             col_widths.append(len(name) + 2)
     width = sum(col_widths) + len(names) - 3
@@ -58,11 +62,11 @@ def check(ctx):
         '|'.join(['', '=' * width, ''])
     ]
     results = fabric.ThreadingGroup(
-        *ctx.obj['hosts'].keys(), user=ctx.obj['user']).run(command, hide=True)
-    for connection, result in sorted(results.items()):
+        *ctx.obj['hosts'], user=ctx.obj['user']).run(command, hide=True)
+    for conn, result in sorted(results.items()):
         result = [l.split(', ') for l in result.stdout.split('\n')][:-1]
         for i, line in enumerate(result):
-            line = [ctx.obj['hosts'][connection.host] if i == 0 else ''] + line
+            line = [get_host_name(conn.host).upper() if i == 0 else ''] + line
             line = [''] + line + ['']
             line = '|'.join([e.center(w) for e, w in zip(line, col_widths)])
             lines.append(line)
