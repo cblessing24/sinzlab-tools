@@ -5,10 +5,8 @@ RUN pip install --no-cache-dir cryptography==2.4.2 click fabric
 RUN mkdir -p -m 0600 ~/.ssh
 COPY config /root/.ssh/
 
-WORKDIR /root/sinzlab-tools
+WORKDIR /sinzlab-tools
 
 COPY . .
 
 RUN python setup.py install
-
-ENTRYPOINT /bin/bash
