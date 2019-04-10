@@ -1,0 +1,9 @@
+version: '3.2'
+services:
+  sinzlab-tools:
+      build: .
+      volumes:
+          - type: bind
+            source: /home/username/.ssh/id_rsa
+            target: /root/.ssh/id_rsa
+      entrypoint: python /sinzlab-tools/sinzlab_tools.py

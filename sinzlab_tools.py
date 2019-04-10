@@ -1,4 +1,4 @@
-import os
+import configparser
 
 import click
 import fabric
@@ -7,10 +7,13 @@ import fabric
 @click.group()
 @click.pass_context
 def cli(ctx):
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    hosts = config['DEFAULT']['hosts'].split()
+    ext = config['DEFAULT']['institution']
     ctx.ensure_object(dict)
-    ctx.obj['hosts'] = ['cantor', 'kowalewskaja', 'pythagoras']
-    ctx.obj['user'] = os.environ['USER']
-    ctx.obj['password'] = os.environ['PASS']
+    ctx.obj['hosts'] = {'.'.join([host, ext]): host.upper() for host in hosts}
+    ctx.obj['user'] = config['DEFAULT']['user']
 
 
 @cli.command()
@@ -44,7 +47,7 @@ def check(ctx):
             col_widths.append(0)
         elif name == 'HOST':
             col_widths.append(
-                max(len(h) for h in ctx.obj['hosts']) + 2)
+                max(len(h) for h in ctx.obj['hosts'].values()) + 2)
         else:
             col_widths.append(len(name) + 2)
     width = sum(col_widths) + len(names) - 3
@@ -55,14 +58,11 @@ def check(ctx):
         '|'.join(['', '=' * width, ''])
     ]
     results = fabric.ThreadingGroup(
-        *ctx.obj['hosts'],
-        user=ctx.obj['user'],
-        connect_kwargs={'password': ctx.obj['password']}
-    ).run(command, hide=True)
+        *ctx.obj['hosts'].keys(), user=ctx.obj['user']).run(command, hide=True)
     for connection, result in sorted(results.items()):
         result = [l.split(', ') for l in result.stdout.split('\n')][:-1]
         for i, line in enumerate(result):
-            line = [connection.original_host.upper() if i == 0 else ''] + line
+            line = [ctx.obj['hosts'][connection.host] if i == 0 else ''] + line
             line = [''] + line + ['']
             line = '|'.join([e.center(w) for e, w in zip(line, col_widths)])
             lines.append(line)
