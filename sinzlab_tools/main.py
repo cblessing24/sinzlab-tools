@@ -53,9 +53,17 @@ def check(ctx):
     click.echo(construct_table(field_names, data))
 
 
-@cli.command()
+@cli.group()
 @click.pass_context
-def docker_ps(ctx):
+def docker(_):
+    """Docker commands."""
+    pass
+
+
+@docker.command()
+@click.pass_context
+def ps(ctx):
+    """List running containers."""
     # Find all containers running on all GPU machines and get their ids
     field_names = [
         'ID',
