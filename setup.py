@@ -1,16 +1,17 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(
-    name='sinzlab-tools',
-    version='0.o.1',
-    py_modules=['sinzlab_tools'],
+    name='sinzlab_tools',
+    version='0.0.1',
+    packages=find_packages(),
+    include_package_data=True,
     install_requires=[
         'Click',
         'Fabric'
     ],
     entry_points='''
         [console_scripts]
-        sinzlab_tools=sinzlab_tools:cli
+        sinzlab-tools=sinzlab_tools.main:cli
     ''',
 )

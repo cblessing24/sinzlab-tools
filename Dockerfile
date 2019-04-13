@@ -2,7 +2,7 @@ FROM python:3
 
 RUN pip install --no-cache-dir cryptography==2.4.2 click fabric
 
-WORKDIR /sinzlab-tools
+WORKDIR /sinzlab_tools
 
 COPY . .
 
