@@ -10,6 +10,7 @@ from .utils import construct_table
 @click.group()
 @click.pass_context
 def cli(ctx):
+    """Tools aimed at making work in the Sinzlab easier."""
     config = configparser.ConfigParser()
     config.read('config.ini')
     hosts = config['DEFAULT']['hosts'].split()

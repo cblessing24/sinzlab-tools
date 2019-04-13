@@ -1,19 +1,19 @@
 from itertools import zip_longest
 
-import click
-
 
 def get_host_name(host):
+    """Returns the host without the common part."""
     return host.split('.')[0].upper()
 
 
-def construct_table(field_names, data):
+def construct_table(column_names, data):
+    """Constructs a table given some column names and data."""
     # Convert data into something that is easier to construct a table from
-    rows = [['HOST', *field_names]]
+    rows = [['HOST', *column_names]]
     for connection, containers in sorted(data.items()):
         host_name = get_host_name(connection.host)
         if not containers:
-            rows.append([host_name] + [''] * len(field_names))
+            rows.append([host_name] + [''] * len(column_names))
         for i, container in enumerate(containers):
             if i == 0:
                 row = [host_name]
