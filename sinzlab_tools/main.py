@@ -4,7 +4,7 @@ import re
 import click
 import fabric
 
-from .utils import construct_table
+from .utils import construct_table, get_host_name
 
 
 @click.group()
@@ -156,6 +156,24 @@ def ps(
         data[connection] = containers
     # Print result as table
     click.echo(construct_table(field_names + ['GPU'], data))
+
+
+@docker.command(context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True
+))
+@click.argument('image')
+@click.pass_context
+def pull(ctx, image):
+    """Pull an image or a repository from a registry."""
+    command = ' '.join([f'docker pull {image}'] + ctx.args)
+    group = fabric.ThreadingGroup(*ctx.obj['hosts'], user=ctx.obj['user'])
+    results = group.run(command, hide=True)
+    field_name = 'EXIT CODE'
+    data = {}
+    for connection, result in results.items():
+        data[connection] = [{field_name: str(result.exited)}]
+    click.echo(construct_table([field_name], data))
 
 
 if __name__ == '__main__':
