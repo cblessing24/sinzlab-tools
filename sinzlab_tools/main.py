@@ -77,8 +77,15 @@ def docker(_):
     multiple=True,
     help='Filter output based on conditions provided.'
 )
+@click.option(
+    '-n',
+    '--last',
+    'n_last_containers',
+    type=click.INT,
+    help='Show n last created containers (includes all states) (default -1).'
+)
 @click.pass_context
-def ps(ctx, all_containers, container_filters):
+def ps(ctx, all_containers, container_filters, n_last_containers):
     """List containers."""
     # Find all containers running on all GPU machines and get their ids
     field_names = [
@@ -96,6 +103,8 @@ def ps(ctx, all_containers, container_filters):
         command.append('--all')
     for container_filter in container_filters:
         command.append(f'--filter {container_filter}')
+    if n_last_containers:
+        command.append(f'--last {n_last_containers}')
     command = ' '.join(command)
     group = fabric.ThreadingGroup(*ctx.obj['hosts'], user=ctx.obj['user'])
     results = group.run(command, hide=True)
