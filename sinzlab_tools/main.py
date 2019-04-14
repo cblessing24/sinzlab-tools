@@ -62,9 +62,16 @@ def docker(_):
 
 
 @docker.command()
+@click.option(
+    '-a',
+    '--all',
+    'all_containers',
+    is_flag=True,
+    help='Show all containers (default shows just running).'
+)
 @click.pass_context
-def ps(ctx):
-    """List running containers."""
+def ps(ctx, all_containers):
+    """List containers."""
     # Find all containers running on all GPU machines and get their ids
     field_names = [
         'ID',
@@ -76,8 +83,12 @@ def ps(ctx):
         'Names',
     ]
     go_template = ', '.join(['{{.' + k + '}}' for k in field_names])
+    command = [f'docker ps --format "{go_template}"']
+    if all_containers:
+        command.append('--all')
+    command = ' '.join(command)
     group = fabric.ThreadingGroup(*ctx.obj['hosts'], user=ctx.obj['user'])
-    results = group.run(f'docker ps --format "{go_template}"', hide=True)
+    results = group.run(command, hide=True)
     data = {}
     for connection, result in results.items():
         lines = result.stdout.split('\n')[:-1]
