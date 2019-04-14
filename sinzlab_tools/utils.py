@@ -10,16 +10,17 @@ def construct_table(column_names, data):
     """Constructs a table given some column names and data."""
     # Convert data into something that is easier to construct a table from
     rows = [['HOST', *column_names]]
-    for connection, containers in sorted(data.items()):
+    for connection, elements in sorted(data.items()):
         host_name = get_host_name(connection.host)
-        if not containers:
+        if not elements:
             rows.append([host_name] + [''] * len(column_names))
-        for i, container in enumerate(containers):
+        for i, element in enumerate(elements):
             if i == 0:
                 row = [host_name]
             else:
                 row = [None]
-            rows.append(row + list(container.values()))
+            row += [str(x) for x in element.values()]
+            rows.append(row)
     # Construct table
     rows = [[''] + row + [''] for row in rows]
     widths = [max(len(x) if x else 0 for x in col) for col in zip(*rows)]

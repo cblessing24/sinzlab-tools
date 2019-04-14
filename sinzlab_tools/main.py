@@ -172,7 +172,7 @@ def pull(ctx, image):
     field_name = 'EXIT CODE'
     data = {}
     for connection, result in results.items():
-        data[connection] = [{field_name: str(result.exited)}]
+        data[connection] = [{field_name: result.exited}]
     click.echo(construct_table([field_name], data))
 
 
