@@ -7,8 +7,31 @@ def get_host_name(host):
 
 
 def construct_table(column_names, data):
-    """Constructs a table given some column names and data."""
-    # Convert data into something that is easier to construct a table from
+    """Constructs a table given some column names and data.
+
+    column_names = [column1, column2]
+
+    data = {
+        connection1: [
+            {column1: value1, column2: value2},
+            {column1: value3, column2: value4}
+        ],
+        connection2: [
+            {column1: value5, column2: value6}
+        ],
+        connection3: []
+    }
+
+    """
+    # Convert data into something that is easier to construct a table from.
+    #
+    # rows = [
+    #   ['HOST',        'column1',  'column2'   ],
+    #   ['connection1', 'value1',   'value2'    ],
+    #   [None,          'value3',   'value4'    ],
+    #   ['connection2', 'value5',   'value6'    ],
+    #   ['connection3', '',         ''          ]
+    # ]
     rows = [['HOST', *column_names]]
     for connection, elements in sorted(data.items()):
         host_name = get_host_name(connection.host)
@@ -21,6 +44,7 @@ def construct_table(column_names, data):
                 row = [None]
             row += [str(x) for x in element.values()]
             rows.append(row)
+
     # Construct table
     rows = [[''] + row + [''] for row in rows]
     widths = [max(len(x) if x else 0 for x in col) for col in zip(*rows)]
