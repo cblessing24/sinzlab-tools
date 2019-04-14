@@ -4,7 +4,7 @@ import re
 import click
 import fabric
 
-from .utils import construct_table, get_host_name
+from .utils import construct_table
 
 
 @click.group()
