@@ -84,10 +84,23 @@ def docker(_):
     type=click.INT,
     help='Show n last created containers (includes all states) (default -1).'
 )
+@click.option(
+    '-l',
+    '--latest',
+    'latest_container',
+    is_flag=True,
+    help='Show the latest created container (includes all states).'
+)
 @click.pass_context
-def ps(ctx, all_containers, container_filters, n_last_containers):
+def ps(
+        ctx,
+        all_containers,
+        container_filters,
+        n_last_containers,
+        latest_container
+):
     """List containers."""
-    # Find all containers running on all GPU machines and get their ids
+    # Assemble docker ps command
     field_names = [
         'ID',
         'Image',
@@ -105,9 +118,13 @@ def ps(ctx, all_containers, container_filters, n_last_containers):
         command.append(f'--filter {container_filter}')
     if n_last_containers:
         command.append(f'--last {n_last_containers}')
+    if latest_container:
+        command.append('--latest')
     command = ' '.join(command)
+    # Run command
     group = fabric.ThreadingGroup(*ctx.obj['hosts'], user=ctx.obj['user'])
     results = group.run(command, hide=True)
+    # Parse results
     data = {}
     for connection, result in results.items():
         lines = result.stdout.split('\n')[:-1]
@@ -128,6 +145,7 @@ def ps(ctx, all_containers, container_filters, n_last_containers):
         else:
             containers = []
         data[connection] = containers
+    # Print result as table
     click.echo(construct_table(field_names + ['GPU'], data))
 
 
