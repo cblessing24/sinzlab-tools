@@ -23,7 +23,6 @@ def cli(ctx, hosts):
         hosts = hosts.split(',')
     else:
         hosts = config['DEFAULT']['hosts'].split()
-    click.echo(hosts)
     common = config['DEFAULT']['common']
     ctx.ensure_object(dict)
     ctx.obj['hosts'] = ['.'.join([h, common]) for h in hosts]
