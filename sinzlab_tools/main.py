@@ -8,12 +8,22 @@ from .utils import construct_table
 
 
 @click.group()
+@click.option(
+    '-h',
+    '--hosts',
+    type=click.STRING,
+    help='Run command on specified hosts (default all).'
+)
 @click.pass_context
-def cli(ctx):
+def cli(ctx, hosts):
     """Tools aimed at making work in the Sinzlab easier."""
     config = configparser.ConfigParser()
     config.read('config.ini')
-    hosts = config['DEFAULT']['hosts'].split()
+    if hosts:
+        hosts = hosts.split(',')
+    else:
+        hosts = config['DEFAULT']['hosts'].split()
+    click.echo(hosts)
     common = config['DEFAULT']['common']
     ctx.ensure_object(dict)
     ctx.obj['hosts'] = ['.'.join([h, common]) for h in hosts]
