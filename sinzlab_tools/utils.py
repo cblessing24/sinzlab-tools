@@ -1,5 +1,7 @@
 from itertools import zip_longest
 
+from fabric import ThreadingGroup
+
 
 def get_host_name(host):
     """Returns the host without the common part."""
@@ -82,3 +84,9 @@ def construct_table(column_names, data):
                     div += '-' * width
             lines.append(div + '+')
     return '\n'.join(lines)
+
+
+def run_group_command(hosts, user, command):
+    group = ThreadingGroup(*hosts, user=user)
+    results = group.run(command, hide=True)
+    return results

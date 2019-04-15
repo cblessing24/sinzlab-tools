@@ -2,9 +2,8 @@ import configparser
 import re
 
 import click
-import fabric
 
-from .utils import construct_table
+from .utils import construct_table, run_group_command
 
 
 @click.group()
@@ -51,8 +50,7 @@ def check_gpus(ctx):
         'USED (MiB)',
         'TOTAL (MiB)'
     )
-    results = fabric.ThreadingGroup(
-        *ctx.obj['hosts'], user=ctx.obj['user']).run(command, hide=True)
+    results = run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
     data = {}
     for connection, result in sorted(results.items()):
         result = [l.split(', ') for l in result.stdout.split('\n')][:-1]
@@ -131,8 +129,7 @@ def ps(
         command.append('--latest')
     command = ' '.join(command)
     # Run command
-    group = fabric.ThreadingGroup(*ctx.obj['hosts'], user=ctx.obj['user'])
-    results = group.run(command, hide=True)
+    results = run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
     # Parse results
     data = {}
     for connection, result in results.items():
@@ -158,6 +155,29 @@ def ps(
     click.echo(construct_table(field_names + ['GPU'], data))
 
 
+@docker.command()
+@click.option(
+    '-u',
+    '--username',
+    type=click.STRING,
+    prompt=True,
+    help='Username.'
+)
+@click.option(
+    '-p',
+    '--password',
+    type=click.STRING,
+    prompt=True,
+    hide_input=True,
+    help='Password.'
+)
+@click.pass_context
+def login(ctx, username, password):
+    """Log in to a Docker registry."""
+    command = f'docker login -u {username} -p {password}'
+    run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
+
+
 @docker.command(context_settings=dict(
     ignore_unknown_options=True,
     allow_extra_args=True
@@ -167,13 +187,7 @@ def ps(
 def pull(ctx, image):
     """Pull an image or a repository from a registry."""
     command = ' '.join([f'docker pull {image}'] + ctx.args)
-    group = fabric.ThreadingGroup(*ctx.obj['hosts'], user=ctx.obj['user'])
-    results = group.run(command, hide=True)
-    field_name = 'EXIT CODE'
-    data = {}
-    for connection, result in results.items():
-        data[connection] = [{field_name: result.exited}]
-    click.echo(construct_table([field_name], data))
+    run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
 
 
 if __name__ == '__main__':
