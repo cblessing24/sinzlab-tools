@@ -3,7 +3,8 @@ import re
 
 import click
 
-from .utils import construct_table, run_group_command
+from sinzlab_tools import exec
+from sinzlab_tools.utils import construct_table
 
 
 @click.group()
@@ -32,33 +33,22 @@ def cli(ctx, hosts):
 @click.pass_context
 def check_gpus(ctx):
     """Get monitoring information for GPUs."""
-    command = (
-        'nvidia-smi '
-        + '--format=csv,noheader,nounits '
-        + '--query-gpu=' + (
-            'index,'
-            + 'utilization.gpu,'
-            + 'temperature.gpu,'
-            + 'memory.used,'
-            + 'memory.total'
-        )
-    )
-    field_names = (
-        'INDEX',
-        'UTIL (%)',
-        'TEMP (°C)',
-        'USED (MiB)',
-        'TOTAL (MiB)'
-    )
-    results = run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
+    queries = {
+        'INDEX': 'index',
+        'UTIL (%)': 'utilization.gpu',
+        'TEMP (°C)': 'temperature.gpu',
+        'USED (MiB)': 'memory.used',
+        'TOTAL (MiB)': 'memory.total'
+    }
+    all_stats = exec.run_nvidia_smi(
+        ctx.obj['hosts'], ctx.obj['user'], queries.values())
     data = {}
-    for connection, result in sorted(results.items()):
-        result = [l.split(', ') for l in result.stdout.split('\n')][:-1]
+    for conn, conn_stats in all_stats.items():
         gpus = []
-        for line in result:
-            gpus.append({k: v for k, v in zip(field_names, line)})
-        data[connection] = gpus
-    click.echo(construct_table(field_names, data))
+        for gpu_stats in conn_stats:
+            gpus.append({k: v for k, v in zip(queries, gpu_stats)})
+        data[conn] = gpus
+    click.echo(construct_table(queries, data))
 
 
 @cli.group()
@@ -129,27 +119,26 @@ def ps(
         command.append('--latest')
     command = ' '.join(command)
     # Run command
-    results = run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
+    outputs = exec.run_group_command(
+        ctx.obj['hosts'], ctx.obj['user'], command)
     # Parse results
     data = {}
-    for connection, result in results.items():
-        lines = result.stdout.split('\n')[:-1]
-        if lines:
-            containers = []
-            for line in lines:
-                values = line.split(', ')
-                con_id = values[0]
-                container = {k: v for k, v in zip(field_names, values)}
-                result = connection.run(
-                    'docker inspect --format "{{.Config.Env}}" ' + con_id,
-                    hide=True
-                )
-                match = re.search(
-                    r'NVIDIA_VISIBLE_DEVICES=(all|\d+)', result.stdout)
-                container['GPU'] = match.group(1) if match else ''
-                containers.append(container)
-        else:
-            containers = []
+    for connection, output in outputs.items():
+        containers = []
+        for line in output:
+            if not line:
+                continue
+            values = line.split(', ')
+            con_id = values[0]
+            container = {k: v for k, v in zip(field_names, values)}
+            output = connection.run(
+                'docker inspect --format "{{.Config.Env}}" ' + con_id,
+                hide=True
+            )
+            match = re.search(
+                r'NVIDIA_VISIBLE_DEVICES=(all|\d+)', output.stdout)
+            container['GPU'] = match.group(1) if match else ''
+            containers.append(container)
         data[connection] = containers
     # Print result as table
     click.echo(construct_table(field_names + ['GPU'], data))
@@ -175,7 +164,7 @@ def ps(
 def login(ctx, username, password):
     """Log in to a Docker registry."""
     command = f'docker login -u {username} -p {password}'
-    run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
+    exec.run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
 
 
 @docker.command(context_settings=dict(
@@ -187,7 +176,7 @@ def login(ctx, username, password):
 def pull(ctx, image):
     """Pull an image or a repository from a registry."""
     command = ' '.join([f'docker pull {image}'] + ctx.args)
-    run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
+    exec.run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
 
 
 if __name__ == '__main__':
