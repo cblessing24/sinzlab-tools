@@ -1,5 +1,4 @@
 import configparser
-import re
 
 import click
 
@@ -129,15 +128,8 @@ def ps(
             if not line:
                 continue
             values = line.split(', ')
-            con_id = values[0]
             container = {k: v for k, v in zip(field_names, values)}
-            output = connection.run(
-                'docker inspect --format "{{.Config.Env}}" ' + con_id,
-                hide=True
-            )
-            match = re.search(
-                r'NVIDIA_VISIBLE_DEVICES=(all|\d+)', output.stdout)
-            container['GPU'] = match.group(1) if match else ''
+            container['GPU'] = exec.get_container_gpu(connection, values[0])
             containers.append(container)
         data[connection] = containers
     # Print result as table
@@ -177,6 +169,61 @@ def pull(ctx, image):
     """Pull an image or a repository from a registry."""
     command = ' '.join([f'docker pull {image}'] + ctx.args)
     exec.run_group_command(ctx.obj['hosts'], ctx.obj['user'], command)
+
+
+@docker.command(context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True
+))
+@click.option('--name', 'custom_name', type=click.STRING)
+@click.argument('docker_run_args', nargs=-1, type=click.UNPROCESSED)
+@click.pass_context
+def run(ctx, custom_name, docker_run_args):
+    """Run a command in a new container."""
+    base_command = 'docker run --runtime nvidia'
+    # Get indexes of available GPUs
+    all_stats = exec.run_nvidia_smi(
+        ctx.obj['hosts'], ctx.obj['user'], ['index'])
+    usage_info = {c: {'total': set(c_s)} for c, c_s in all_stats.items()}
+    # Get indexes of used GPUs
+    all_con_ids = exec.run_group_command(
+        ctx.obj['hosts'], ctx.obj['user'], 'docker ps -q')
+    for conn, conn_con_ids in all_con_ids.items():
+        conn_gpus_used = set()
+        for con_id in conn_con_ids:
+            if not con_id:
+                continue
+            gpu_used = exec.get_container_gpu(conn, con_id)
+            if not gpu_used:
+                continue
+            elif gpu_used == 'all':
+                conn_gpus_used = usage_info[conn]['total']
+                break
+            else:
+                conn_gpus_used.add(gpu_used)
+        usage_info[conn]['used'] = conn_gpus_used
+    # Get indexes of free GPUs by computing the difference between the set of
+    # available GPUs and the set of used GPUs
+    for conn, usage in usage_info.items():
+        usage['free'] = usage['total'] - usage['used']
+    # Run the docker run command on all free GPUs
+    for conn, usage in usage_info.items():
+        free_gpus = usage['free']
+        if not free_gpus:
+            continue
+        for free_gpu in free_gpus:
+            # Create new container name
+            name = [ctx.obj['user'], free_gpu]
+            if custom_name:
+                name.append(custom_name)
+            name = '-'.join(name)
+            command = [
+                base_command,
+                '--name ' + name,
+                '--env NVIDIA_VISIBLE_DEVICES=' + free_gpu,
+                *docker_run_args
+            ]
+            conn.run(' '.join(command), hide=True)
 
 
 if __name__ == '__main__':
