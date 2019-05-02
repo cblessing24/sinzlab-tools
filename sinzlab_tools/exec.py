@@ -4,6 +4,8 @@ from fabric import ThreadingGroup
 
 
 def run_group_command(hosts, user, command):
+    if not isinstance(hosts, list):
+        hosts = [hosts]
     group = ThreadingGroup(*hosts, user=user)
     results = group.run(command, hide=True)
     outputs = {}
@@ -44,7 +46,7 @@ def get_total_gpus_indexes(hosts, user):
     all_gpu_indexes = run_nvidia_smi(hosts, user, ['index'])
     n_total = 0
     total_gpu_indexes = {}
-    for conn, conn_gpu_indexes in all_gpu_indexes.values():
+    for conn, conn_gpu_indexes in all_gpu_indexes.items():
         conn_gpu_indexes = set(conn_gpu_indexes)
         n_total += len(conn_gpu_indexes)
         total_gpu_indexes[conn] = conn_gpu_indexes
