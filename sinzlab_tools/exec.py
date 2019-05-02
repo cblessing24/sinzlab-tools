@@ -38,3 +38,14 @@ def get_container_gpu(conn, con_id):
     ).stdout
     match = re.search(r'NVIDIA_VISIBLE_DEVICES=(all|\d+)', env)
     return match.group(1) if match else ''
+
+
+def get_total_gpus_indexes(hosts, user):
+    all_gpu_indexes = run_nvidia_smi(hosts, user, ['index'])
+    n_total = 0
+    total_gpu_indexes = {}
+    for conn, conn_gpu_indexes in all_gpu_indexes.values():
+        conn_gpu_indexes = set(conn_gpu_indexes)
+        n_total += len(conn_gpu_indexes)
+        total_gpu_indexes[conn] = conn_gpu_indexes
+    return n_total, total_gpu_indexes
