@@ -181,7 +181,7 @@ def pull(ctx, image):
 def run(ctx, custom_name, docker_run_args):
     """Run a command in a new container."""
     base_command = 'docker run --runtime nvidia'
-    n_free, free = exec.get_free_gpu_indexes(ctx.obj['hosts'], ctx.obj['user'])
+    _, free = exec.get_free_gpu_indexes(ctx.obj['hosts'], ctx.obj['user'])
     for conn, conn_free in free.items():
         if not conn_free:
             continue
