@@ -81,3 +81,15 @@ def get_used_gpu_indexes(hosts, user):
         n_used += len(conn_used)
         used[conn] = conn_used
     return n_used, used
+
+
+def get_free_gpu_indexes(hosts, user):
+    n_totoal, total = get_total_gpus_indexes(hosts, user)
+    n_used, used = get_used_gpu_indexes(hosts, user)
+    n_free = 0
+    free = {}
+    for (conn, conn_total), conn_used in zip(total.items(), used.values()):
+        conn_free = conn_total - conn_used
+        n_free += len(conn_free)
+        free[conn] = conn_free
+    return n_free, free
