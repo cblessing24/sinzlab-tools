@@ -3,7 +3,7 @@ import configparser
 import click
 
 from sinzlab_tools import exec
-from sinzlab_tools.utils import construct_table
+from sinzlab_tools import utils
 
 
 @click.group()
@@ -47,7 +47,7 @@ def check_gpus(ctx):
         for gpu_stats in conn_stats:
             gpus.append({k: v for k, v in zip(queries, gpu_stats)})
         data[conn] = gpus
-    click.echo(construct_table(queries, data))
+    click.echo(utils.construct_table(queries, data))
 
 
 @cli.group()
@@ -133,7 +133,7 @@ def ps(
             containers.append(container)
         data[connection] = containers
     # Print result as table
-    click.echo(construct_table(field_names + ['GPU'], data))
+    click.echo(utils.construct_table(field_names + ['GPU'], data))
 
 
 @docker.command()
@@ -195,6 +195,7 @@ def run(ctx, custom_name, docker_run_args):
                 base_command,
                 '--name ' + name,
                 '--env NVIDIA_VISIBLE_DEVICES=' + free_gpu,
+                '--hostname ' + utils.get_host_name(conn.host),
                 *docker_run_args
             ]
             conn.run(' '.join(command), hide=True)
