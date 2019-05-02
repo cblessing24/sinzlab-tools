@@ -51,3 +51,33 @@ def get_total_gpus_indexes(hosts, user):
         n_total += len(conn_gpu_indexes)
         total_gpu_indexes[conn] = conn_gpu_indexes
     return n_total, total_gpu_indexes
+
+
+def get_used_gpu_indexes(hosts, user):
+    all_con_ids = run_group_command(hosts, user, 'docker ps -q')
+    n_used = 0
+    used = {}
+    for conn, conn_con_ids in all_con_ids.items():
+        conn_used = set()
+        for con_id in conn_con_ids:
+            if not con_id:
+                # No GPUs on the connection are currently in use because there
+                # are no containers running on the connection
+                continue
+            used_gpu = get_container_gpu(conn, con_id)
+            if not used_gpu:
+                # The container does not use a GPU because the environment
+                # variable NVIDIA_VISIBLE_DEVICES is not set inside the
+                # container
+                continue
+            elif used_gpu == 'all':
+                # All GPUs on the connection are in use because
+                # NVIDIA_VISIBLE_DEVICES is set to 'all' inside the container
+                _, total = get_total_gpus_indexes(conn.host, user)
+                conn_used = set(total)
+                break
+            else:
+                conn_used.add(used_gpu)
+        n_used += len(conn_used)
+        used[conn] = conn_used
+    return n_used, used
