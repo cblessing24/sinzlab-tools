@@ -181,37 +181,11 @@ def pull(ctx, image):
 def run(ctx, custom_name, docker_run_args):
     """Run a command in a new container."""
     base_command = 'docker run --runtime nvidia'
-    # Get indexes of available GPUs
-    all_stats = exec.run_nvidia_smi(
-        ctx.obj['hosts'], ctx.obj['user'], ['index'])
-    usage_info = {c: {'total': set(c_s)} for c, c_s in all_stats.items()}
-    # Get indexes of used GPUs
-    all_con_ids = exec.run_group_command(
-        ctx.obj['hosts'], ctx.obj['user'], 'docker ps -q')
-    for conn, conn_con_ids in all_con_ids.items():
-        conn_gpus_used = set()
-        for con_id in conn_con_ids:
-            if not con_id:
-                continue
-            gpu_used = exec.get_container_gpu(conn, con_id)
-            if not gpu_used:
-                continue
-            elif gpu_used == 'all':
-                conn_gpus_used = usage_info[conn]['total']
-                break
-            else:
-                conn_gpus_used.add(gpu_used)
-        usage_info[conn]['used'] = conn_gpus_used
-    # Get indexes of free GPUs by computing the difference between the set of
-    # available GPUs and the set of used GPUs
-    for conn, usage in usage_info.items():
-        usage['free'] = usage['total'] - usage['used']
-    # Run the docker run command on all free GPUs
-    for conn, usage in usage_info.items():
-        free_gpus = usage['free']
-        if not free_gpus:
+    n_free, free = exec.get_free_gpu_indexes(ctx.obj['hosts'], ctx.obj['user'])
+    for conn, conn_free in free.items():
+        if not conn_free:
             continue
-        for free_gpu in free_gpus:
+        for free_gpu in conn_free:
             # Create new container name
             name = [ctx.obj['user'], free_gpu]
             if custom_name:
