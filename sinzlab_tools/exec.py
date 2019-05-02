@@ -74,7 +74,7 @@ def get_used_gpu_indexes(hosts, user):
                 # All GPUs on the connection are in use because
                 # NVIDIA_VISIBLE_DEVICES is set to 'all' inside the container
                 _, total = get_total_gpus_indexes(conn.host, user)
-                conn_used = set(total)
+                conn_used = set(total[conn])
                 break
             else:
                 conn_used.add(used_gpu)
