@@ -6,4 +6,4 @@ services:
           - type: bind
             source: /home/username/.ssh/id_rsa
             target: /root/.ssh/id_rsa
-      entrypoint: python /sinzlab-tools/sinzlab_tools.py
+      entrypoint: sinzlab-tools
